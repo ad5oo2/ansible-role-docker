@@ -1,0 +1,69 @@
+- name: Set a hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+    use: systemd
+  when: inventory_hostname != ansible_facts['nodename']
+
+- name: Apt-update
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Apt dist-upgrade
+  ansible.builtin.apt:
+    upgrade: dist
+
+- name: Uninstall unneeded packages
+  ansible.builtin.apt:
+    state: absent
+    name: "{{ item }}"
+  loop:
+    - docker.io
+    - docker-compose
+    - docker-compose-v2
+    - docker-doc
+    - podman-docker
+
+- name: And install needed
+  ansible.builtin.apt:
+    pkg:
+    - ca-certificates
+    - curl
+
+- name: Add GPG key and repository
+  block:
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+        state: present
+        filename: docker
+
+- name: Install docker
+  ansible.builtin.apt:
+    pkg:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-buildx-plugin
+    - docker-compose-plugin
+    update_cache: yes
+
+- name: Run and enable service
+  ansible.builtin.systemd_service:
+    name: docker
+    state: started
+    enabled: true
+
+# vim: ft=yaml.ansible

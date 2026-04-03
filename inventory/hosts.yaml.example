@@ -1,0 +1,6 @@
+docker:
+  hosts:
+    docker.host.name:
+      ansible_host: dns-name.or.address
+      ansible_user: root
+      ansible_port: 22

@@ -1,0 +1,8 @@
+- name: Install docker engine
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Execute a role
+    ansible.builtin.import_role:
+      name: docker
